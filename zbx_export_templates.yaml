@@ -1,0 +1,126 @@
+zabbix_export:
+  version: '5.4'
+  date: '2021-09-23T01:05:19Z'
+  groups:
+    -
+      uuid: 7df96b18c230490a9a0a9e2307226338
+      name: Templates
+  templates:
+    -
+      uuid: 2d601884f29b4974b2aef90294c5e2d7
+      template: HDD_DEV
+      name: 'HDD DEV'
+      description: 'Основной шаблон для работы со SMART дисков'
+      groups:
+        -
+          name: Templates
+      discovery_rules:
+        -
+          uuid: fa7e85fe8095441d8833184f5bb88776
+          name: 'Drive Discovery'
+          type: ZABBIX_ACTIVE
+          key: uDrive.discovery
+          delay: 1h
+          filter:
+            evaltype: AND
+            conditions:
+              -
+                macro: '{#SMART_ENABLED}'
+                value: '1'
+                formulaid: A
+          lifetime: 3d
+          item_prototypes:
+            -
+              uuid: d9db890166d547a486a5156e53d6b059
+              name: '{#DISKNAME}, Записано GB'
+              type: ZABBIX_ACTIVE
+              key: 'uDrive.gbwritten[{#DISKNAME},gbwritten]'
+              delay: 12h
+              history: 7d
+              trends: 7d
+              request_method: POST
+              tags:
+                -
+                  tag: Application
+                  value: '{#DISKNAME}'
+            -
+              uuid: bab39e870d5e4e93bc1bdf4abc139c01
+              name: '{#DISKNAME}, Статус S.M.A.R.T.'
+              type: ZABBIX_ACTIVE
+              key: 'uDrive.health[{#DISKNAME},health]'
+              delay: 12h
+              history: 7d
+              trends: 7d
+              request_method: POST
+              tags:
+                -
+                  tag: Application
+                  value: '{#DISKNAME}'
+              trigger_prototypes:
+                -
+                  uuid: 437c9ea8b130463f9b852589cf3fdc1a
+                  expression: 'last(/HDD_DEV/uDrive.health[{#DISKNAME},health])=0'
+                  name: '{#DISKNAME}, Один из параметров S.M.A.R.T в значении Fail'
+                  priority: HIGH
+                  manual_close: 'YES'
+            -
+              uuid: 6407c802747348ae8647e89ee64c7b32
+              name: '{#DISKNAME}, Модель'
+              type: ZABBIX_ACTIVE
+              key: 'uDrive.model[{#DISKNAME},smart,model_name]'
+              delay: 12h
+              history: 1d
+              trends: '0'
+              value_type: TEXT
+              request_method: POST
+              tags:
+                -
+                  tag: Application
+                  value: '{#DISKNAME}'
+            -
+              uuid: b3388ee43d9647948320d033e6042235
+              name: '{#DISKNAME}, Количество наработанных часов'
+              type: ZABBIX_ACTIVE
+              key: 'uDrive.poweronhours[{#DISKNAME},smart,poweronhours]'
+              delay: 12h
+              history: 1d
+              trends: 1d
+              request_method: POST
+              tags:
+                -
+                  tag: Application
+                  value: '{#DISKNAME}'
+            -
+              uuid: cfdf2ae6e956445f996ea15d3cdb0004
+              name: '{#DISKNAME}, Серийный номер'
+              type: ZABBIX_ACTIVE
+              key: 'uDrive.serialNumber[{#DISKNAME},smart,serial_number]'
+              delay: 12h
+              history: 1d
+              trends: '0'
+              value_type: TEXT
+              request_method: POST
+              tags:
+                -
+                  tag: Application
+                  value: '{#DISKNAME}'
+            -
+              uuid: f3fefcf466924ea3b000cfc0796c0f2d
+              name: '{#DISKNAME}, Температура'
+              type: ZABBIX_ACTIVE
+              key: 'uDrive.temperaturecel[{#DISKNAME},smart,temperaturecel]'
+              delay: 12h
+              history: 1d
+              trends: 1d
+              request_method: POST
+              tags:
+                -
+                  tag: Application
+                  value: '{#DISKNAME}'
+              trigger_prototypes:
+                -
+                  uuid: cfcc245d1bd74f6b86f6ba44ba57b964
+                  expression: 'last(/HDD_DEV/uDrive.temperaturecel[{#DISKNAME},smart,temperaturecel])>47'
+                  name: '{#DISKNAME}, Температура диска больше 47 гр.'
+                  priority: HIGH
+          request_method: POST

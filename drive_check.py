@@ -14,8 +14,8 @@ smartexepath = 'C:\\Zabbix\\files\\smartctl.exe '
 
 
 def getJSONSmart(addprefix):
-    result = subprocess.run(smartexepath +addprefix+ drive +' --json=c', stdout=subprocess.PIPE, stderr=subprocess.PIPE,universal_newlines=True).stdout
-    # print(result) #For test only
+    result = subprocess.run(smartexepath + addprefix + drive + ' --json=c', stdout=subprocess.PIPE, stderr=subprocess.PIPE,universal_newlines=True).stdout
+    #print(result) #For test only
     json_result = json.loads(result)
     return json_result
 
@@ -29,6 +29,7 @@ def getDeviceType(json_result):
 
 
 def findSmartFromDict():
+    fromkey = None
     sortsmartdict = OrderedDict(sorted(smartdict.items(), key=lambda t: t[1]))
     for key in sortsmartdict:
         # print(key+" "+str(sortsmartdict.get(key)))
@@ -58,23 +59,6 @@ def damerau_levenshtein_distance(s1, s2):
     return (d[len_s1 - 1, len_s2 - 1])
 
 
-
-# def damerau_levenshtein_distance(s1, s2):
-#     l1 = len(s1)
-#     l2 = len(s2)
-#     matrix = [list(range(l1 + 1))] * (l2 + 1)
-#     for zz in list(range(l2 + 1)):
-#       matrix[zz] = list(range(zz, zz + l1 + 1))
-#     for zz in list(range(0, l2)):
-#       for sz in list(range(0, l1)):
-#         if s1[sz] == s2[zz]:
-#           matrix[zz+1][sz+1] = min(matrix[zz+1][sz] + 1, matrix[zz][sz+1] + 1, matrix[zz][sz])
-#         else:
-#           matrix[zz+1][sz+1] = min(matrix[zz+1][sz] + 1, matrix[zz][sz+1] + 1, matrix[zz][sz] + 1)
-#     distance = float(matrix[l2][l1])
-#     result = 1.0-distance/max(l1, l2)
-#     return result
-
 def healthStatus(json_result):
     if json_result["smart_status"]["passed"] == True:
         return 1
@@ -88,11 +72,11 @@ def getInfoData(json_result, device_type):
 
 
 def getSmartData(json_result, device_type):
-     if device_type == 'ata':
+     if device_type == 'ata' or device_type == 'sat':
          for i in json_result["ata_smart_attributes"]["table"]:
              d = damerau_levenshtein_distance(i["name"], smartdata)
-             # if d < 0.100000000000000:
-             smartdict[i["name"]] = d
+             if d <= 11:
+                smartdict[i["name"]] = d
          smartsearch = findSmartFromDict()
          for i in json_result["ata_smart_attributes"]["table"]:
             if i["name"] == smartsearch:
@@ -118,7 +102,7 @@ def getGBWritten(json_result, device_type):
         block_size = json_result["logical_block_size"]
     except KeyError:
         block_size = 0
-    if device_type == 'ata':
+    if device_type == 'ata' or device_type == 'sat':
         for i in json_result["ata_smart_attributes"]["table"]:
             if i["name"] == "Total_LBAs_Written" or i["name"] == "Lifetime_Writes":
                 lba_written = i["raw"]["value"]
@@ -127,7 +111,7 @@ def getGBWritten(json_result, device_type):
             if i["name"] == "Host_Writes_GiB" or i["name"] == "Lifetime_Writes_GiB":
                 t = i["raw"]["value"]
                 return t
-    #Для nvme дисков считаем по другой формуле
+    # Для nvme дисков считаем по другой формуле
     elif device_type == 'nvme':
         lba_written = (json_result["nvme_smart_health_information_log"]["data_units_written"])
         t = int(512000 * lba_written / 1073741824)
@@ -148,7 +132,8 @@ elif datatype == "gbwritten":
     addprefix = "-a "
     json_result = getJSONSmart(addprefix)
     device_type = getDeviceType(json_result)
-    print(getGBWritten(json_result, device_type))
+    smartvalue = getGBWritten(json_result, device_type)
+    print(smartvalue)
 elif datatype == "health":
     addprefix = "-H "
     json_result = getJSONSmart(addprefix)

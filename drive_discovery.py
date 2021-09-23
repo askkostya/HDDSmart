@@ -3,9 +3,10 @@ import json
 
 smartexepath = 'C:\\Zabbix\\files\\smartctl.exe '
 
-# Всегда возвращает 1, тэг оставлен для совместимости с предыдущей версией
+#Todo
 def return_smart_enabled(outinfo_json, media_type):
 	return "1"
+
 
 def return_media_type(outinfo_json):
 	device_type = outinfo_json["device"]["protocol"]
@@ -14,14 +15,13 @@ def return_media_type(outinfo_json):
 	# уберем из списка nvme записи
 	if str(outinfo_json["device"]["name"]).find('nvme') >= 1:
 		return 0
-	if str(outinfo_json["device"]["name"]).find('csmi') >= 1:
-		return 0
+	#if str(outinfo_json["device"]["name"]).find('csmi') >= 1:
+	#	return 0
 	if device_type == "NVMe":
 		return "NVM"
 	elif device_type == "SCSI": #это iSCSI или RAID
 		return 0
 	elif device_type == "ATA":
-
 		try:
 			if outinfo_json["rotation_rate"] == 0:
 				return "SSD"
